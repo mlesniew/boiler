@@ -26,6 +26,9 @@ Sensor sensor_info[] = {
     { { 0 }, nullptr }
 };
 
+constexpr size_t sensor_info_length =
+    sizeof(sensor_info) / sizeof(*sensor_info) - 1;
+
 ESP8266WebServer server(80);
 
 Led led_sensor(D2);
@@ -94,7 +97,15 @@ void setup_endpoints() {
             });
 
     server.on("/", []{
-            StaticJsonBuffer<1024> buf;
+            constexpr unsigned int buffer_size =
+                // root object
+                JSON_OBJECT_SIZE(sensor_info_length)
+                // each nested element
+                + sensor_info_length * JSON_OBJECT_SIZE(2)
+                // data per each nested element
+                + 80 * sensor_info_length;
+
+            StaticJsonBuffer<buffer_size> buf;
             JsonObject & doc = buf.createObject();
 
             for (const Sensor * s = sensor_info; s->name; ++s) {
@@ -163,6 +174,9 @@ void setup_sensors() {
 void setup() {
     Serial.begin(9600);
 
+    Serial.println(HOSTNAME " built on " __DATE__ " " __TIME__);
+    Serial.println("Configured with " + String(sensor_info_length) + " sensors");
+
     // blink the diode really fast until setup() exits
     BlinkerSettingGuard bg(blinker, 0b10);
 
@@ -213,6 +227,7 @@ void loop() {
             pattern <<= 8;
             blinker_sensor.set_pattern(pattern);
         });
+
 
     sensor_reader.tick();
     server.handleClient();
