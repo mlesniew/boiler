@@ -95,18 +95,17 @@ void setup_endpoints() {
 
     server.on("/", []{
             StaticJsonBuffer<1024> buf;
-            JsonArray & doc = buf.createArray();
+            JsonObject & doc = buf.createObject();
 
             for (const Sensor * s = sensor_info; s->name; ++s) {
                 JsonObject & e = buf.createObject();
                 e["addr"] = addr2str(s->address);
-                e["name"] = s->name;
                 if (s->got_reading) {
                     e["temperature"] = s->last_reading;
                 } else {
                     e["temperature"] = (char*)0;
                 }
-                doc.add(e);
+                doc[s->name] = e;
             }
             doc.prettyPrintTo(Serial);
             String ret;
