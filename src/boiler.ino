@@ -34,7 +34,7 @@ ESP8266WebServer server(80);
 Led led_sensor(D2);
 Led led(D4, true);
 
-Blinker blinker(led, 200, 0b1 << 30);
+Blinker blinker(led, 100, 0b1);
 Blinker blinker_sensor(led_sensor, 150, 0);
 
 OneWire onewire(D1);
@@ -71,7 +71,7 @@ Sensor * get_sensor(const DeviceAddress addr) {
 }
 
 void setup_wifi() {
-    BlinkerSettingGuard bg(blinker, 0b101 << 10);
+    BlinkerSettingGuard bg(blinker, 0b11110000);
     WiFi.hostname(HOSTNAME);
     WiFiManager wifiManager;
 
@@ -177,9 +177,6 @@ void setup() {
     Serial.println(HOSTNAME " built on " __DATE__ " " __TIME__);
     Serial.println("Configured with " + String(sensor_info_length) + " sensors");
 
-    // blink the diode really fast until setup() exits
-    BlinkerSettingGuard bg(blinker, 0b10);
-
     setup_sensors();
     setup_wifi();
     setup_endpoints();
@@ -216,6 +213,23 @@ unsigned int update_readings() {
     return count;
 }
 
+void monitor_wifi() {
+    switch (WiFi.status())  {
+        case WL_CONNECTED:
+            blinker.set_pattern(0b1 << 30);
+            break;
+        case WL_NO_SSID_AVAIL:
+            // the configured network is not available
+        case WL_CONNECT_FAILED:
+            // network available, but still can't connect
+            blinker.set_pattern(0b10);
+            break;
+        default:
+            blinker.set_pattern(0b11110000);
+            break;
+    }
+}
+
 void loop() {
     static Periodic sensor_reader(60 * 1000, []{
             unsigned int c = update_readings();
@@ -229,6 +243,7 @@ void loop() {
         });
 
 
+    monitor_wifi();
     sensor_reader.tick();
     server.handleClient();
 }
