@@ -19,8 +19,11 @@ struct Stopwatch {
 struct Periodic : public Stopwatch {
     Periodic(
             unsigned long interval,
-            std::function<void()> callback = nullptr)
+            std::function<void()> callback = nullptr,
+            bool run_immediately = false)
         : interval(interval), callback(callback) {
+        if (run_immediately)
+            callback();
     }
 
     void tick() {

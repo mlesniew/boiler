@@ -240,8 +240,7 @@ void loop() {
             }
             pattern <<= 8;
             blinker_sensor.set_pattern(pattern);
-        });
-
+        }, true);
 
     monitor_wifi();
     sensor_reader.tick();
